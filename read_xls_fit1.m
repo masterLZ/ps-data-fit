@@ -11,9 +11,12 @@ if isreadhig
     read_hig;
 end
 %列出文件夹下所有文件
+%%
+%这里路径需要更改
 path = 'E:\oyxp\ps-data\Autocorrelation_data\PsWidth20-Image';
 cd(path)
 save_path = '..\PsWidth20_lizhan0710';
+%%
 fileFolder=fullfile(path);
 dirOutput = dir(fullfile(fileFolder,'*.xls'));
 filenames = {dirOutput.name};
