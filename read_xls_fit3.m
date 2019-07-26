@@ -1,6 +1,5 @@
 %%
-%方法1使用了减去前100个均值然后做高斯拟合方式
-%减均值方法不够稳定
+%方法2使用带常数项的高斯拟合方法
 %%
 clear;
 clc;
@@ -15,7 +14,7 @@ end
 %这里路径需要更改
 path = 'E:\oyxp\ps-data\Autocorrelation_data\PsWidth20-Image';
 cd(path)
-save_path = '..\PsWidth20_lizhan0710';
+save_path = '..\PsWidth20_lizhan0724';
 %%
 fileFolder=fullfile(path);
 dirOutput = dir(fullfile(fileFolder,'*.xls'));
@@ -38,7 +37,7 @@ for i = 1:length(filenames)
         head_B = strsplit(head_A,'--');
         if(length(head_B)==1)
             plus_Width = str2double(head{5});
-            if (plus_Width > 0 && plus_Width <30)
+            if (plus_Width > 0 && plus_Width <50)
             %有效数据
             
                 file_effective = file;
@@ -46,41 +45,84 @@ for i = 1:length(filenames)
                 x = data(:,1);
                 y = data(:,2);
                 
-                
+                %增加预处理
+                TH = mean(y(1:20));
+                y(y<TH) = TH;
+                %
                 index_20 = find(y>=max(y)*0.3);
                 x1 = x(index_20(1));
                 x2 = x(index_20(length(index_20)));
                 plus_width20 =abs(x2-x1);
-
+%                 x_out = linspace(x1,x2,200);
+%                 x_in = x(index_20(1):index_20(length(index_20)));
+%                 y_in = y(index_20(1):index_20(length(index_20)));
+%                 y_out = interp1(x_in,y_in,x_out,'makima');
+%                 x = [x(1:index_20(1)-1)',x_out,x(index_20(length(index_20))+1:length(x))'];
+%                 y = [y(1:index_20(1)-1)',y_out,y(index_20(length(index_20))+1:length(y))'];
                 h = plot(x,y,'LineWidth',1.5);
                 hold on ;grid on;
                 title(head_B);               
-                TH = mean(y(1:100));
-                y = y-TH;
-                y(y<0)=0;
                 
-                f = @(A,xdata) (A(1).*exp(-((xdata-A(2))/A(3)).^2));
-                A0 = [1,0,0.5];
-        
+               
+               
+%                 %
+                if(1)
+                   f = @(A,xdata) (A(1).*exp(-((xdata-A(2))/A(3)).^2)+A(4));
+                   A0 = [1,0,0.5,0.2];
+                else 
+                    %这里是洛伦兹函数拟合，没有应用，只做研究
+                   f = @(A,xdata) A(1).*exp(-((x-A(2))./A(3)).^2)+A(4);
+                   A0 = [1,0,0.5,0.2]; 
+                end
                 
                 A1 = lsqcurvefit(f,A0,x,y);
                 y1 = f(A1,x);
  
                 plot(x,y1,'g','LineWidth',1.5)
                 
-                if (max(y)/2 > max(y1))
-                    fpwm_buffer = find(y>=max(y)/2);
+                if (((max(y)-TH)/2+TH) > max(y1))
+                    fpwm_buffer = find(y>=((max(y)-TH)/2+TH));
                 else
                     if (max(y1) > max(y))
-                        fpwm_buffer = find(y1>=max(y1)/2);
+                        fpwm_buffer = find(y1>=((max(y1)-TH)/2+TH));
                     else
-                        fpwm_buffer = find(y1>=max(y)/2);
+                        fpwm_buffer = find(y1>=((max(y)-TH)/2+TH));
                     end
                 end
                 
                 fpwm = abs(x(fpwm_buffer(1))-x(fpwm_buffer(length(fpwm_buffer))));
-                fpwm_buffer = find(y>=max(y)/2);
+                fpwm_buffer = find(y>=((max(y)-TH)/2+TH));
                 fpwm2 = abs(x(fpwm_buffer(1))-x(fpwm_buffer(length(fpwm_buffer))));
+                    if(fpwm2 >80)
+                        %先滤波
+                        Fy = fftshift(fft(y));
+                        Len = 4;
+                        Fy_B = zeros(size(Fy));
+                        mid = round(length(Fy)/2);
+                        Fy_B(mid-Len:mid+Len-1)= Fy(mid-Len:mid+Len-1);
+                        y1 = real(ifft(ifftshift(Fy_B)));
+                        y1(y1<TH)=TH;
+                        plot(x,y1,'LineWidth',1.5);
+                        y=y1;
+                        A1 = lsqcurvefit(f,A0,x,y);
+                        y1 = f(A1,x);
+
+                        plot(x,y1,'LineWidth',1.5)
+
+                        if (((max(y)-TH)/2+TH) > max(y1))
+                            fpwm_buffer = find(y>=((max(y)-TH)/2+TH));
+                        else
+                            if (max(y1) > max(y))
+                                fpwm_buffer = find(y1>=((max(y1)-TH)/2+TH));
+                            else
+                                fpwm_buffer = find(y1>=((max(y)-TH)/2+TH));
+                            end
+                        end
+
+                        fpwm = abs(x(fpwm_buffer(1))-x(fpwm_buffer(length(fpwm_buffer))));
+                        fpwm_buffer = find(y>=((max(y)-TH)/2+TH));
+                        fpwm2 = abs(x(fpwm_buffer(1))-x(fpwm_buffer(length(fpwm_buffer))));
+                    end
                 if (plus_Width<5)
                     FPWM_1ps = [FPWM_1ps;{fpwm2,fpwm,plus_Width}];
                     table_name_1ps = [table_name_1ps;head_B(1)];
@@ -103,10 +145,10 @@ for i = 1:length(filenames)
 end
 %table_fpwm = table(table_name,FPWM);
 write_fpwm_1ps = [table_name_1ps,FPWM_1ps];
-str_path = sprintf('%s\\data\\1ps_tale_delta1.xls',save_path);
+str_path = sprintf('%s\\data\\1ps_delta1.xls',save_path);
 xlswrite(str_path,write_fpwm_1ps);
 write_fpwm_10ps = [table_name_10ps,FPWM_10ps];
-str_path = sprintf('%s\\data\\10ps_tale_delta1.xls',save_path);
+str_path = sprintf('%s\\data\\10ps_delta1.xls',save_path);
 xlswrite(str_path,write_fpwm_10ps);
 %%
 clc;

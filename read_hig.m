@@ -5,7 +5,7 @@ warning off;
 %列出文件夹下所有文件
 path = 'E:\oyxp\ps-data\Autocorrelation_data\PsWidth20-Image';
 cd(path)
-save_path = '..\PsWidth20_lizhan0710';
+save_path = '..\PsWidth20_lizhan0724';
 fileFolder=fullfile(path);
 dirOutput = dir(fullfile(fileFolder,'*.HIG'));
 filenames = {dirOutput.name};
@@ -19,7 +19,7 @@ for i = 1:length(filenames)
     year = str2double(head{1});
     month = str2double(head{2});
     %只要2019年数据
-    if(year >= 2019 && month>=4)
+    if(year == 2019 && month>=4)
         head_B = strsplit(head_A,'--');
         if(length(head_B)==1)
             plus_sidth = str2double(head{5});
@@ -31,8 +31,8 @@ for i = 1:length(filenames)
                 fprintf('\n%d',max(max(pic)))
 %                 imwrite(pic,[save_path,'\',head_B{1},'.tif'])
                 pic = mat2gray(pic);
-                pic = medfilt2(pic);
-                pic = imgaussfilt(pic);
+                pic = medfilt2(pic,[5 5]);
+                pic = imgaussfilt(pic,1);
                 [M,N] = size(pic);
                 pic = double(pic(:,30:M-30));
                

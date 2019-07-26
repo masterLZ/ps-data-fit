@@ -5,7 +5,7 @@ clear;
 clc;
 close all;
 warning off;
-isreadhig = 0;
+isreadhig = 1;
 if isreadhig 
     read_hig;
 end
@@ -14,7 +14,7 @@ end
 %这里路径需要更改
 path = 'E:\oyxp\ps-data\Autocorrelation_data\PsWidth20-Image';
 cd(path)
-save_path = '..\PsWidth20_lizhan0710';
+save_path = '..\PsWidth20_lizhan0724';
 %%
 fileFolder=fullfile(path);
 dirOutput = dir(fullfile(fileFolder,'*.xls'));
@@ -37,7 +37,7 @@ for i = 1:length(filenames)
         head_B = strsplit(head_A,'--');
         if(length(head_B)==1)
             plus_Width = str2double(head{5});
-            if (plus_Width > 0 && plus_Width <30)
+            if (plus_Width > 0 && plus_Width <50)
             %有效数据
             
                 file_effective = file;
